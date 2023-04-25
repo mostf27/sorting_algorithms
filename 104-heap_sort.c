@@ -1,77 +1,104 @@
 #include "sort.h"
 
 /**
-* sift_down - fixes a heap
-* @array: the heap to be fixed
-* @root: root of heap
-* @end: ;ast index of the heap
-* @size: size of the array
-*/
-void sift_down(int *array, size_t root, size_t end, size_t size)
+ * iParent - returns index of parent node for an array arranged as a binary
+ * tree, for index i
+ * @i: starting index to determine parent node index
+ * Return: index of parent node
+ */
+int iParent(int i)
 {
-	size_t left, right, swap;
-	int temp;
+	return ((i - 1) / 2);
+}
 
-	while ((left = (2 * root) + 1) <= end)
+/**
+ * iLeftChild- returns index of left child branch for an array arranged as
+ * a binary tree, for index i
+ * @i: starting index to determine left child branch index
+ * Return: index of left child node
+ */
+int iLeftChild(int i)
+{
+	return ((2 * i) + 1);
+}
+
+/**
+ * ConvertToHeap - arranges array of integers into a heap/binary tree scheme
+ * @array: array of integers
+ * @size: number of elements in array
+ */
+void ConvertToHeap(int *array, size_t size)
+{
+	int start;
+
+	start = iParent(size - 1);
+
+	while (start >= 0)
 	{
+		SiftDown(array, size, start, size - 1);
+		start--;
+	}
+}
+
+/**
+ * SiftDown - shuffles heap/binary tree sorted array into array sorted by
+ * ascending value
+ * @array: array of values to be sorted in place, from heap to ascending
+ * @size: number of elements in array
+ * @start: starting index
+ * @end: ending index
+ */
+void SiftDown(int *array, size_t size, int start, int end)
+{
+	int root, swap, temp, child;
+
+	root = start;
+
+	while (iLeftChild(root) <= end)
+	{
+		child = iLeftChild(root);
 		swap = root;
-		right = left + 1;
-		if (array[swap] < array[left])
-			swap = left;
-		if (right <= end && array[swap] < array[right])
-			swap = right;
-		if (swap == root)
+
+		if (array[swap] < array[child])
+			swap = child;
+		if (child + 1 <= end && array[swap] < array[child + 1])
+			swap = child + 1;
+		if (swap != root)
+		{
+			temp = array[root];
+			array[root] = array[swap];
+			array[swap] = temp;
+			print_array(array, size);
+			root = swap;
+		}
+		else
 			return;
-		temp = array[root];
-		array[root] = array[swap];
-		array[swap] = temp;
-		print_array(array, size);
-		root = swap;
 	}
 }
 
 /**
-* make_heap - makes a heap from an unsorted array
-* @array: array to turn into a heap
-* @size: size of the array
-*
-* Return: void
-*/
-void make_heap(int *array, size_t size)
-{
-	size_t parent;
-
-	for (parent = ((size - 1) - 1) / 2; 1; parent--)
-	{
-		sift_down(array, parent, size - 1, size);
-		if (parent == 0)
-			break;
-	}
-}
-
-/**
-* heap_sort - sorts an array of ints in ascending order w/ the Heap sort algo
-* @array: array to sort
-* @size: size of the array
-*
-* Return: void
-*/
+ * heap_sort - sorts array of integers in ascending order using a heap sort
+ * sift-down alogrithm
+ * @array: array of values to be sorted
+ * @size: number of elements in array
+ */
 void heap_sort(int *array, size_t size)
 {
-	size_t end;
-	int temp;
+	int iEnd, temp;
 
-	if (array == NULL || size < 2)
+	if (!array || size < 2)
 		return;
-	make_heap(array, size);
-	end = size - 1;
-	while (end > 0)
+
+	ConvertToHeap(array, size);
+
+	iEnd =  (int)size - 1;
+	while (iEnd > 0)
 	{
-		temp = array[end];
-		array[end] = array[0];
+		temp = array[iEnd];
+		array[iEnd] = array[0];
 		array[0] = temp;
 		print_array(array, size);
-		end--;
-		sift_down(array, 0, end, size);
+		iEnd--;
+		SiftDown(array, size, 0, iEnd);
 	}
 }

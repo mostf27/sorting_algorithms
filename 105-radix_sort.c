@@ -1,78 +1,133 @@
 #include "sort.h"
-/**
-* pow_10 - calculates a positive power of 10
-* @power: power of 10 to calculate
-* Return: final result
-*/
-unsigned int pow_10(unsigned int power)
-{
-	unsigned int i, res;
+#include <stdlib.h>
 
-	res = 1;
-	for (i = 0; i < power; i++)
-		res *= 10;
-	return (res);
+/**
+ * init_bucket_count - resets bucket_count values to 0
+ * @bucket_count: array containing amounts of members for arrays in `buckets`
+ */
+void init_bucket_count(int *bucket_count)
+{
+	int i;
+
+	for (i = 0; i < 10; i++)
+		bucket_count[i] = 0;
 }
 
 /**
-* count_sort - sorts an array of integers in ascending order
-* @array: array to be sorted
-* @size: size of the array to be sorted
-* @digit: digit to sort
-*
-* Return: 1 if when need to keep sorting, otherwise 0
-*/
-unsigned int count_sort(int *array, size_t size, unsigned int digit)
+ * build_buckets - allocates space for arrays to be held in `buckets`
+ * @buckets: array of arrays each containing sorted members of `array`
+ * @bucket_count: array containing amounts of members for arrays in `buckets`
+ */
+void build_buckets(int *bucket_count, int **buckets)
 {
-	int i, count[10] = {0};
-	int *cpy = NULL;
-	size_t j, temp, total = 0;
-	unsigned int dp1, dp2, sort = 0;
+	int *bucket;
+	int i;
 
-	dp2 = pow_10(digit - 1);
-	dp1 = dp2 * 10;
-	cpy = malloc(sizeof(int) * size);
-	if (cpy == NULL)
-		exit(1);
-	for (j = 0; j < size; j++)
-	{
-		cpy[j] = array[j];
-		if (array[j] / dp1 != 0)
-			sort = 1;
-	}
-	for (i = 0; i < 10 ; i++)
-		count[i] = 0;
-	for (j = 0; j < size; j++)
-		count[(array[j] % dp1) / dp2] += 1;
 	for (i = 0; i < 10; i++)
 	{
-		temp = count[i];
-		count[i] = total;
-		total += temp;
+		bucket = malloc(sizeof(int) * bucket_count[i]);
+		if (!bucket)
+		{
+			for (; i > -1; i--)
+				free(buckets[i]);
+			free(buckets);
+			exit(EXIT_FAILURE);
+		}
+		buckets[i] = bucket;
 	}
-	for (j = 0; j < size; j++)
-	{
-		array[count[(cpy[j] % dp1) / dp2]] = cpy[j];
-		count[(cpy[j] % dp1) / dp2] += 1;
-	}
-	free(cpy);
-	return (sort);
+	init_bucket_count(bucket_count);
 }
 
 /**
-* radix_sort - Radix sort algorithm
-* @array: array to sort
-* @size: size of the array
-*/
+ * find_max - searches array of integers for highest value
+ * @array: array of values to be searched
+ * @size: number of elements in array
+ * Return: largest integer stored in array
+ */
+int find_max(int *array, size_t size)
+{
+	int max;
+	size_t i;
+
+	max = array[0];
+	for (i = 1; i < size; i++)
+		if (array[i] > max)
+			max = array[i];
+	return (max);
+}
+
+/**
+ * into_array - flattens buckets into array sorted by current digit place,
+ * then prints results and frees current buckets for next pass
+ * @array: array of values to be printed
+ * @size: number of elements in array
+ * @buckets: array of arrays each containing sorted members of `array`
+ * @bucket_count: array containing amounts of members for arrays in `buckets`
+ */
+void into_array(int *array, size_t size, int **buckets, int *bucket_count)
+{
+	int i, j, k;
+
+	/* flatten bucket members in order into array sorted by place */
+	for (k = 0, i = 0; k < 10; k++)
+	{
+		for (j = 0; j < bucket_count[k]; j++, i++)
+			array[i] = buckets[k][j];
+	}
+	/* print results */
+	print_array(array, size);
+	/* free buckets from current pass */
+	for (i = 0; i < 10; i++)
+		free(buckets[i]);
+}
+
+/**
+ * radix_sort - Sorts array of integers in ascending order using a Radix sort
+ * alogrithm starting with the LSD, the 'least significant (1s place) digit',
+ * and sorting by next digit to left. Size of `bucket_count` here determined
+ * by max range of key variance (digits 0-9), other solutions may be needed for
+ * much larger ranges.
+ * @array: array of values to be sorted
+ * @size: number of elements in array
+ */
 void radix_sort(int *array, size_t size)
 {
-	unsigned int i, sort = 1;
+	int **buckets;
+	int bucket_count[10];
+	int max, max_digits, pass, divisor, digit;
+	size_t i;
 
-	if (array == NULL || size < 2)
+	if (!array || size < 2)
 		return;
-	for (i = 1; sort == 1; i++)
+	buckets = malloc(sizeof(int *) * 10);
+	if (!buckets)
+		exit(1);
+	/* find amount of places in largest element */
+	max = find_max(array, size);
+	for (max_digits = 0; max > 0; max_digits++)
+		max /= 10;
+	/* one sorting pass for each place in max_digits */
+	for (pass = 0, divisor = 1; pass < max_digits; pass++, divisor *= 10)
 	{
-		sort = count_sort(array, size, i);
-		print_array(array, size);
+		init_bucket_count(bucket_count);
+		/* find amount of members in each bucket */
+		for (i = 0; i < size; i++)
+		{
+			digit = (array[i] / divisor) % 10;
+			bucket_count[digit]++;
+		}
+		build_buckets(bucket_count, buckets);
+		/* fill buckets sorting by digit at current power of 10 */
+		for (i = 0; i < size; i++)
+		{
+			/* find digit of source element at that power of 10 */
+			digit = (array[i] / divisor) % 10;
+			/* place member of source array in digit's bucket */
+			buckets[digit][bucket_count[digit]] = array[i];
+			/* record increase in bucket fill level */
+			bucket_count[digit]++;
+		}
+		into_array(array, size, buckets, bucket_count);
 	}
+	free(buckets);
 }

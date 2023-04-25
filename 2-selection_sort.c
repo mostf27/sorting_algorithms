@@ -1,37 +1,39 @@
 #include "sort.h"
+
 /**
- * selection_sort - sort an array of integers using selection sort
- *
- * @array: the array to order
- * @size: the siz of the array to order
+ * selection_sort - sorts an array of integers using a selction sort
+ * algorithm
+ * @array: array of integers to be sorted
+ * @size: amount of elements in array
  */
 void selection_sort(int *array, size_t size)
 {
-	unsigned long int i = 0, j = 0, smallest = 0;
-	int *swap = NULL;
+	int i, j, min_j, temp, n = (int)size;
 
 	if (!array || size < 2)
 		return;
-	for (; i < size; i++)
+
+	/* at every position in the n-member array */
+	for (i = 0; i < n - 1; i++)
 	{
-		smallest = i; /* set current as minimum */
-		swap =  malloc(sizeof(int) * 1);
-		*swap = *(array + i);
-		for (j = i + 1; j < size; j++)
+		/* scan from that position to the end, */
+		min_j = i;
+		for (j = i + 1; j < n; j++)
 		{
-			if (*(array + j) < *(array + smallest))
+			/* determine the minimum value in that range */
+			if (array[j] < array[min_j])
 			{
-				smallest = j; /* update minimum index*/
+				min_j = j;
 			}
 		}
-		if (i < smallest)
+		/* and if it is lower than the value at start of range, */
+		/* swap them */
+		if (min_j != i)
 		{
-		*(array + i) = *(array + smallest);
-		*(array + smallest) = *swap;
-		free(swap);
-		print_array(array, size);
+			temp = array[i];
+			array[i] = array[min_j];
+			array[min_j] = temp;
+			print_array(array, size);
 		}
-		else
-			free(swap);
 	}
 }
